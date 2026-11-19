@@ -1,3 +1,4 @@
+
 package com.example.data.firebase
 
 import android.app.Activity
@@ -8,7 +9,6 @@ import androidx.credentials.CredentialManager
 import androidx.credentials.CustomCredential
 import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
-import com.example.R
 import com.google.android.libraries.identity.googleid.GetGoogleIdOption
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -52,6 +52,20 @@ class AuthManager(private val context: Context) {
     private val auth: FirebaseAuth by lazy { Firebase.auth }
     private val credentialManager by lazy { CredentialManager.create(context) }
 
+    private fun getDefaultWebClientId(): String? {
+        return try {
+            val resourceId = context.resources.getIdentifier(
+                "default_web_client_id",
+                "string",
+                context.packageName
+            )
+            if (resourceId != 0) context.getString(resourceId) else null
+        } catch (e: Exception) {
+            Log.e(TAG, "Google Web Client ID not found", e)
+            null
+        }
+    }
+
     private val _currentUser = MutableStateFlow<AuthUserInfo?>(mapUser(runCatching { auth.currentUser }.getOrNull()))
     val currentUser: StateFlow<AuthUserInfo?> = _currentUser.asStateFlow()
 
@@ -70,8 +84,7 @@ class AuthManager(private val context: Context) {
 
     suspend fun attemptSilentGoogleSignIn(): Boolean {
         if (runCatching { auth.currentUser }.getOrNull() != null) return true
-        val clientId = runCatching { context.getString(R.string.default_web_client_id) }.getOrNull()
-            ?: return false
+        val clientId = getDefaultWebClientId() ?: return false
 
         val googleIdOption = GetGoogleIdOption.Builder()
             .setFilterByAuthorizedAccounts(true)
@@ -102,11 +115,12 @@ class AuthManager(private val context: Context) {
     }
 
     suspend fun signInWithGoogleInteractive(activity: Activity): Result<AuthUserInfo> {
-        val clientId = try {
-            context.getString(R.string.default_web_client_id)
-        } catch (e: Exception) {
-            return Result.failure(IllegalStateException("Google Sign-In configuration missing (default_web_client_id)."))
-        }
+        val clientId = getDefaultWebClientId()
+            ?: return Result.failure(
+                IllegalStateException(
+                    "Google Sign-In configuration missing (default_web_client_id). Check Firebase configuration."
+                )
+            )
 
         val signInOption = GetSignInWithGoogleOption.Builder(serverClientId = clientId).build()
         val request = GetCredentialRequest.Builder()
