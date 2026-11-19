@@ -1,0 +1,6 @@
+{
+  "name": "Aishu",
+  "description": "Futuristic black-and-red personal AI voice assistant supporting English and Telugu, manual and wake-word modes, ten voice profiles, custom voice recordings, emotional styles, persistent memory, and online/offline operation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

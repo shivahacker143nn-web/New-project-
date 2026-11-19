@@ -1,0 +1,92 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated user assistant preferences and personalization profile.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the profile owner."
+        },
+        "assistantName": {
+          "type": "string",
+          "description": "Custom personal assistant display name (e.g. AI SHU)."
+        },
+        "preferredLanguage": {
+          "type": "string",
+          "enum": ["ENGLISH", "TELUGU", "BILINGUAL"],
+          "description": "Preferred speech and response language."
+        },
+        "responseLength": {
+          "type": "string",
+          "enum": ["CONCISE", "BALANCED", "DETAILED"],
+          "description": "Preferred assistant response length."
+        },
+        "personalizationNotes": {
+          "type": "string",
+          "description": "User-approved personalization context."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": ["userId", "assistantName", "preferredLanguage", "responseLength", "createdAt", "updatedAt"]
+    },
+    "AssistantRule": {
+      "title": "AssistantRule",
+      "description": "Permanent user-defined rule applied consistently to every AI conversation.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the rule owner."
+        },
+        "title": {
+          "type": "string",
+          "description": "Short rule title."
+        },
+        "instruction": {
+          "type": "string",
+          "description": "Permanent rule directive enforced in system instructions."
+        },
+        "isEnabled": {
+          "type": "boolean",
+          "description": "Whether the rule is currently active."
+        },
+        "isProtected": {
+          "type": "boolean",
+          "description": "Whether ordinary chat cannot override this rule."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp set via FieldValue.serverTimestamp()."
+        }
+      },
+      "required": ["userId", "title", "instruction", "isEnabled", "isProtected", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Owner-isolated assistant profile and personalization settings."
+    },
+    "/users/{userId}/rules/{ruleId}": {
+      "schema": { "$ref": "#/entities/AssistantRule" },
+      "description": "Owner-isolated permanent assistant rules synced across sessions."
+    }
+  }
+}

@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Aishu</string>
+    <string name="aishu_wordmark">AISHU</string>
+    <string name="notification_channel_wake_word">AISHU Wake Word Service</string>
+    <string name="notification_channel_desc">Keeps AISHU listening in the background for your custom wake word</string>
+    <string name="wake_service_title">AISHU Automatic Mode Active</string>
+    <string name="wake_service_stop">Stop Listening</string>
+</resources>

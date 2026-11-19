@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global safety net: deny everything by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.assistantName is string && data.assistantName.size() >= 1 && data.assistantName.size() <= 40 &&
+             data.preferredLanguage in ['ENGLISH', 'TELUGU', 'BILINGUAL'] &&
+             data.responseLength in ['CONCISE', 'BALANCED', 'DETAILED'] &&
+             (!('personalizationNotes' in data) || (data.personalizationNotes is string && data.personalizationNotes.size() <= 500)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidAssistantRule(data) {
+      return data.userId is string && data.userId == request.auth.uid &&
+             data.title is string && data.title.size() >= 1 && data.title.size() <= 80 &&
+             data.instruction is string && data.instruction.size() >= 2 && data.instruction.size() <= 400 &&
+             data.isEnabled is bool &&
+             data.isProtected is bool &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    match /users/{userId} {
+      allow get, list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll(['userId', 'assistantName', 'preferredLanguage', 'responseLength', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['userId', 'assistantName', 'preferredLanguage', 'responseLength', 'personalizationNotes', 'createdAt', 'updatedAt']) &&
+                       isValidUserProfile(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidUserProfile(incoming()) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['assistantName', 'preferredLanguage', 'responseLength', 'personalizationNotes', 'updatedAt']);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      match /rules/{ruleId} {
+        allow get, list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(ruleId) &&
+                         incoming().keys().hasAll(['userId', 'title', 'instruction', 'isEnabled', 'isProtected', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['userId', 'title', 'instruction', 'isEnabled', 'isProtected', 'createdAt', 'updatedAt']) &&
+                         isValidAssistantRule(incoming());
+
+        allow update: if isOwner(userId) &&
+                         isValidId(ruleId) &&
+                         isValidAssistantRule(incoming()) &&
+                         incoming().userId == existing().userId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['title', 'instruction', 'isEnabled', 'isProtected', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(ruleId);
+      }
+    }
+  }
+}
